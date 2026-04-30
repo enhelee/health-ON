@@ -45,6 +45,7 @@ input,textarea,select,button{color-scheme:light dark}
 .tb-right{display:flex;align-items:center;gap:8px}
 .tb-date{font-size:10px;color:var(--t3)}
 .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--pm),var(--pd));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;cursor:pointer}
+.av img,.profile-av-big img,.fav img,.rank-av img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
 
 /* ── 화면 ── */
 .screen{display:none;padding:14px 14px 110px}
@@ -199,6 +200,10 @@ input,textarea,select,button{color-scheme:light dark}
 .profile-av-big{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;margin:0 auto 10px;border:2px solid rgba(255,255,255,.5)}
 .profile-name{font-size:17px;font-weight:700}
 .profile-bmr{font-size:12px;opacity:.8;margin-top:4px}
+.avatar-actions{display:flex;gap:7px;margin-top:10px}
+.avatar-chip{border:1.5px solid var(--b);background:var(--pll);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;font-family:inherit}
+.avatar-preview-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.avatar-preview{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--pm),var(--pd));color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;overflow:hidden;border:1.5px solid var(--b);flex-shrink:0}
 .calorie-result{background:var(--pl);border-radius:var(--rs);padding:14px;margin-bottom:10px;border:0.5px solid var(--b)}
 .calorie-result-num{font-size:28px;font-weight:700;color:var(--pd);text-align:center;letter-spacing:-.5px}
 .calorie-result-lbl{font-size:11px;color:var(--pd);text-align:center;opacity:.7;margin-top:2px}
@@ -604,6 +609,21 @@ input,textarea,select,button{color-scheme:light dark}
     <div class="sl">기본 정보</div>
     <div class="card">
       <div class="goal-row"><div><div class="g-l">이름</div></div><input type="text" class="g-in" id="pName" value="" placeholder="이름 입력" style="width:110px;text-align:right"></div>
+      <div style="margin:4px 0 12px">
+        <div class="g-l" style="margin-bottom:6px">프로필 이미지</div>
+        <div class="avatar-preview-row">
+          <div class="avatar-preview" id="avatarPreview">?</div>
+          <div style="flex:1">
+            <input type="text" class="g-in" id="avatarEmoji" maxlength="2" placeholder="이모티콘" style="width:90px;text-align:center" oninput="setAvatarEmoji(this.value)">
+            <input type="file" id="avatarPhotoInput" accept="image/*" onchange="handleAvatarPhoto(event)" style="display:none">
+            <div class="avatar-actions">
+              <button type="button" class="avatar-chip" onclick="document.getElementById('avatarPhotoInput').click()">사진 선택</button>
+              <button type="button" class="avatar-chip" onclick="clearAvatarCustom()">기본</button>
+            </div>
+          </div>
+        </div>
+        <div class="mini-note">사진 또는 이모티콘을 고르면 피드와 랭킹에도 같이 보여요.</div>
+      </div>
       <div class="goal-row"><div><div class="g-l">성별</div></div>
         <div class="seg-btns" style="width:130px;margin-bottom:0">
           <button class="seg-btn on" id="segF" onclick="setSex('female',this)">여성</button>
@@ -794,6 +814,7 @@ let workoutMode='reps',favExercises=[];
 let rankGroupFilter='all';
 let editingMealId=null,editingWorkoutId=null,editingFeedId=null,editingFeedRaw=null;
 let feedCache=[];
+let pendingAvatarPhoto=null;
 let profile={name:'',sex:'female',age:30,height:162,weight:58.2,goalWeight:55,goalMus:44,group:3,riskFactors:[],cardioImproved:false,namingJoined:false,actFactor:1.375,dietAdj:-300};
 let calcCal=1800,calcProt=80;
 let chatHistory=[],isStreaming=false;
@@ -845,6 +866,47 @@ function setSex(sex,btn){profile.sex=sex;document.querySelectorAll('#segF,#segM'
 function setAct(factor,btn){profile.actFactor=factor;document.querySelectorAll('#actGrid .goal-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');calcCalories();}
 function setDietGoal(adj,btn){profile.dietAdj=adj;document.querySelectorAll('#dietGoalGrid .goal-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');calcCalories();}
 function selP(btn){document.querySelectorAll('#pgrid .p-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function avatarHtml(user,name='?'){
+  const p=user||{};
+  if(p.avatarType==='photo'&&p.avatarPhoto)return `<img src="${escapeHtml(p.avatarPhoto)}" alt="">`;
+  if(p.avatarType==='emoji'&&p.avatarEmoji)return escapeHtml(p.avatarEmoji);
+  return escapeHtml((name||'?')[0]||'?');
+}
+function renderAvatarTargets(){
+  const html=avatarHtml(profile,profile.name);
+  ['topAv','profAvBig','avatarPreview'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
+  const ae=document.getElementById('avatarEmoji');
+  if(ae&&document.activeElement!==ae)ae.value=profile.avatarType==='emoji'?(profile.avatarEmoji||''):'';
+}
+function setAvatarEmoji(value){
+  const v=(value||'').trim();
+  pendingAvatarPhoto=null;
+  if(v){profile.avatarType='emoji';profile.avatarEmoji=v;profile.avatarPhoto='';}
+  else{profile.avatarType='initial';profile.avatarEmoji='';profile.avatarPhoto='';}
+  renderAvatarTargets();
+}
+async function handleAvatarPhoto(event){
+  const f=event.target.files&&event.target.files[0];
+  if(!f)return;
+  try{
+    showToast('프로필 사진 처리 중...');
+    const preview=await compressImage(f,400,0.78);
+    pendingAvatarPhoto={file:f,preview};
+    profile.avatarType='photo';
+    profile.avatarPhoto=preview;
+    profile.avatarEmoji='';
+    renderAvatarTargets();
+    showToast('사진 선택됨 · 프로필 저장을 눌러주세요');
+  }catch(e){console.error('avatar photo',e);showToast('사진 처리 실패 😢');}
+  event.target.value='';
+}
+function clearAvatarCustom(){
+  pendingAvatarPhoto=null;
+  profile.avatarType='initial';
+  profile.avatarEmoji='';
+  profile.avatarPhoto='';
+  renderAvatarTargets();
+}
 function renderGroups(){
   const el=document.getElementById('groupGrid');if(!el)return;
   el.innerHTML=HEALTHON_GROUPS.map(g=>`<button class="group-btn${profile.group===g.id?' on':''}" onclick="setGroup(${g.id})"><div class="group-no">${g.label}</div><div class="group-desc">${g.desc}</div></button>`).join('');
@@ -878,6 +940,14 @@ function updateBonusPreview(){
 }
 async function saveProfile(){
   profile.name=document.getElementById('pName').value||'';
+  if(pendingAvatarPhoto?.file){
+    try{
+      showToast('프로필 사진 업로드 중...');
+      profile.avatarPhoto=await uploadImageToStorage(pendingAvatarPhoto.file,'avatars');
+      profile.avatarType='photo';
+      pendingAvatarPhoto=null;
+    }catch(e){console.error('avatar upload',e);showToast('프로필 사진 업로드 실패 😢');return;}
+  }
   profile.age=parseInt(document.getElementById('pAge').value)||30;
   profile.height=parseFloat(document.getElementById('pHeight').value)||162;
   profile.weight=parseFloat(document.getElementById('pWeight').value)||58;
@@ -900,8 +970,7 @@ async function saveProfile(){
   }catch(e){console.error(e);}
   if(profile.name)localStorage.setItem('hlon_username',profile.name);
   showToast('프로필 저장 완료! 평가 점수도 반영됐어요 ✨');
-  document.getElementById('topAv').textContent=profile.name[0];
-  document.getElementById('profAvBig').textContent=profile.name[0];
+  renderAvatarTargets();
 }
 
 // ── 유틸 ──
@@ -1021,8 +1090,7 @@ async function init(){
       profile.name=localName;
       const pn=document.getElementById('pName');if(pn)pn.value=localName;
       const fn=document.getElementById('profName');if(fn)fn.textContent=localName;
-      const ta=document.getElementById('topAv');if(ta)ta.textContent=localName[0];
-      const pa=document.getElementById('profAvBig');if(pa)pa.textContent=localName[0];
+      renderAvatarTargets();
     }
   }catch(e){console.error('restore name',e);}
   const uid=getUserId();
@@ -1046,7 +1114,7 @@ async function init(){
       const saved=pr.data.data;Object.assign(profile,saved);
       calcCal=saved.calcCal||1800;calcProt=saved.calcProt||80;
       if(saved.theme&&THEMES[saved.theme]){applyTheme(saved.theme);renderThemePicker();}
-      if(saved.name&&saved.name.trim()){document.getElementById('pName').value=saved.name;document.getElementById('profName').textContent=saved.name;document.getElementById('topAv').textContent=saved.name[0];document.getElementById('profAvBig').textContent=saved.name[0];localStorage.setItem('hlon_username',saved.name);}
+      if(saved.name&&saved.name.trim()){document.getElementById('pName').value=saved.name;document.getElementById('profName').textContent=saved.name;renderAvatarTargets();localStorage.setItem('hlon_username',saved.name);}
       if(saved.age)document.getElementById('pAge').value=saved.age;
       if(saved.height)document.getElementById('pHeight').value=saved.height;
       if(saved.weight)document.getElementById('pWeight').value=saved.weight;
@@ -1695,18 +1763,23 @@ function formatWorkoutDetail(w){
 async function loadFeed(){
   const el=document.getElementById('feedList');el.innerHTML='<div class="empty">불러오는 중...</div>';
   try{
-    const{data,error}=await sb.from('feed').select('*').order('created_at',{ascending:false}).limit(50);
+    const[{data,error},profileRes]=await Promise.all([
+      sb.from('feed').select('*').order('created_at',{ascending:false}).limit(50),
+      sb.from('profiles').select('id,data')
+    ]);
     if(error||!data?.length){el.innerHTML='<div class="empty">아직 글이 없어요 🌸<br>첫 번째로 공유해보세요!</div>';return;}
+    const profileByUser=(profileRes.data||[]).reduce((acc,row)=>{acc[row.id]=row.data||{};return acc;},{});
     feedCache=data;
     el.innerHTML=data.map(p=>{
       const c=parseFeedContent(p.content);
       const isMine=p.user_id===getUserId();
+      const av=avatarHtml(profileByUser[p.user_id],p.name);
       const txtHtml=escapeHtml(c.text).replace(/\n/g,'<br>');
       const photoStrip=c.photos.length?`<div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px">${c.photos.map(ph=>`<img src="${ph}" onclick="viewPhoto('${ph.replace(/'/g,"\\'")}')" style="width:120px;height:120px;border-radius:10px;object-fit:cover;border:0.5px solid var(--b);flex-shrink:0;cursor:pointer">`).join('')}</div>`:'';
       const ytLink=c.yt?`<a class="yt-link" href="${escapeHtml(c.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>YouTube 영상</a>`:'';
       const workoutBadge=c.workout?`<span style="display:inline-block;font-size:9px;background:#FFE6EE;color:#C03668;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">💪 운동 인증</span>`:'';
       const mealBadge=c.meal?`<span style="display:inline-block;font-size:9px;background:#FFF3D0;color:#7A5500;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">🥗 식단 공유</span>`:'';
-      return`<div class="feed-item"><div class="fav">${(p.name||'?')[0]}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>${isMine?`<button class="cheer-btn" onclick="editFeed(${p.id})">수정</button><button class="cheer-btn" onclick="deleteFeed(${p.id})" style="color:var(--t3)">삭제</button>`:''}<button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
+      return`<div class="feed-item"><div class="fav">${av}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>${isMine?`<button class="cheer-btn" onclick="editFeed(${p.id})">수정</button><button class="cheer-btn" onclick="deleteFeed(${p.id})" style="color:var(--t3)">삭제</button>`:''}<button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
     }).join('');
   }catch(e){el.innerHTML='<div class="empty">불러오기 실패 😢</div>';}
 }
@@ -1867,6 +1940,9 @@ async function renderRanking(){
       return{
         name:r.name,isMe,
         group:d.group||3,
+        avatarType:d.avatarType||'initial',
+        avatarEmoji:d.avatarEmoji||'',
+        avatarPhoto:d.avatarPhoto||'',
         ...metrics,
         risk:isMe?bonus.riskScore:d.riskScore||0,
         cardio:isMe?bonus.cardioScore:d.cardioScore||0,
@@ -1890,7 +1966,7 @@ async function renderRanking(){
       return`<div class="rank-card${isFirst?' first':''}${m.isMe?' me':''}">
         <div class="rank-top">
           <div class="rank-num">${medals[i]||i+1}</div>
-          <div class="rank-av" style="background:${m.color};color:${m.txtColor}">${m.name[0]}</div>
+          <div class="rank-av" style="background:${m.color};color:${m.txtColor}">${avatarHtml(m,m.name)}</div>
           <div class="rank-info"><div class="rank-name">${m.name}${m.isMe?'<span style="font-size:9px;background:var(--p);color:#fff;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:5px">나</span>':''}</div><div class="rank-detail">${group} · ①~⑥ 합산 점수</div></div>
           <div class="rank-pct">${s.total}</div>
         </div>
@@ -2144,8 +2220,7 @@ async function signup(){
   localStorage.setItem('hlon_username',name);
   document.getElementById('pName').value=name;
   document.getElementById('profName').textContent=name;
-  document.getElementById('topAv').textContent=name[0];
-  document.getElementById('profAvBig').textContent=name[0];
+  renderAvatarTargets();
   document.getElementById('nameModal').style.display='none';
   updateHomeStats();
   showToast(`환영해요, ${name}님! 🌸`);
