@@ -1721,8 +1721,8 @@ function renderRankFilters(members){
   const cur=rankGroupFilter;
   const activeGroup=groups.find(g=>g.id===cur);
   el.innerHTML=`<div class="rank-filter-scroll">
-    <button class="rank-filter-btn${cur==='all'?' on':''}" onclick="setRankGroupFilter('all')">전체 ${members.length}</button>
-    ${groups.map(g=>`<button class="rank-filter-btn${cur===g.id?' on':''}" onclick="setRankGroupFilter(${g.id})">${g.label} ${g.count}</button>`).join('')}
+    <button class="rank-filter-btn${cur==='all'?' on':''}" onclick="setRankGroupFilter('all')">전체 ${members.length}명</button>
+    ${groups.map(g=>`<button class="rank-filter-btn${cur===g.id?' on':''}" onclick="setRankGroupFilter(${g.id})">${g.label} ${g.count}명</button>`).join('')}
   </div>
   <div class="rank-filter-note">${activeGroup?`${activeGroup.label} · ${activeGroup.desc} 기준 순위입니다.`:'전체 참여자 기준 순위입니다. 그룹을 누르면 해당 그룹 안에서 순위가 다시 계산돼요.'}</div>`;
 }
