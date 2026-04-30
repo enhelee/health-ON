@@ -1236,6 +1236,15 @@ function editWorkout(id){
   const btn=document.getElementById('workoutSaveBtn');if(btn)btn.textContent='운동 수정 저장';
   document.getElementById('sc-workout')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+async function deleteWorkout(id){
+  if(!confirm('이 운동 기록을 삭제할까요?'))return;
+  wLogs=wLogs.filter(l=>l.id!==id);
+  try{await persistTodayWorkouts();}catch(e){console.error('deleteWorkout',e);showToast('삭제 실패 😢');return;}
+  if(editingWorkoutId===id)resetWorkoutForm();
+  renderAll();
+  await loadRecentHistory();
+  showToast('운동 기록 삭제됨');
+}
 
 // ── 운동 저장 ──
 function getExerciseWeightKg(){
@@ -1697,7 +1706,7 @@ async function loadFeed(){
       const ytLink=c.yt?`<a class="yt-link" href="${escapeHtml(c.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>YouTube 영상</a>`:'';
       const workoutBadge=c.workout?`<span style="display:inline-block;font-size:9px;background:#FFE6EE;color:#C03668;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">💪 운동 인증</span>`:'';
       const mealBadge=c.meal?`<span style="display:inline-block;font-size:9px;background:#FFF3D0;color:#7A5500;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">🥗 식단 공유</span>`:'';
-      return`<div class="feed-item"><div class="fav">${(p.name||'?')[0]}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>${isMine?`<button class="cheer-btn" onclick="editFeed(${p.id})">수정</button>`:''}<button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
+      return`<div class="feed-item"><div class="fav">${(p.name||'?')[0]}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>${isMine?`<button class="cheer-btn" onclick="editFeed(${p.id})">수정</button><button class="cheer-btn" onclick="deleteFeed(${p.id})" style="color:var(--t3)">삭제</button>`:''}<button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
     }).join('');
   }catch(e){el.innerHTML='<div class="empty">불러오기 실패 😢</div>';}
 }
@@ -1714,6 +1723,15 @@ function editFeed(id){
   document.getElementById('myPostTxt').value=parseFeedContent(p.content).text||'';
   const btn=document.getElementById('feedPostBtn');if(btn)btn.textContent='피드 수정 저장';
   document.getElementById('myPostTxt').focus();
+}
+async function deleteFeed(id){
+  if(!confirm('이 피드 글을 삭제할까요?'))return;
+  try{
+    await sb.from('feed').delete().eq('id',id).eq('user_id',getUserId());
+    if(editingFeedId===id)resetFeedForm();
+    showToast('피드 삭제됨');
+    loadFeed();
+  }catch(e){console.error('deleteFeed',e);showToast('피드 삭제 실패 😢');}
 }
 function buildEditedFeedContent(raw,text){
   if(typeof raw==='string'&&raw.trim().startsWith('{')){
@@ -2021,7 +2039,7 @@ function renderWLogs(){
     const photos=l.photos||[];
     const det=formatWorkoutDetail(l);
     const photoStrip=photos.length?`<div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px">${photos.map(p=>`<img src="${p}" onclick="viewPhoto('${p.replace(/'/g,"\\'")}')" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:0.5px solid var(--b);flex-shrink:0;cursor:pointer">`).join('')}</div>`:'';
-    return`<div class="log-item"><div class="log-top"><div><div class="log-name">${l.name}</div><div class="log-det">${det}${l.memo?' · '+escapeHtml(l.memo):''} <span style="color:var(--t3)">${l.time}</span></div><span class="pill">${l.cat}</span></div><div style="text-align:right"><div class="log-kcal">${l.kcal}kcal</div><button onclick="editWorkout(${l.id})" style="background:transparent;border:1px solid var(--b);border-radius:999px;color:var(--t2);cursor:pointer;font-size:10px;padding:5px 8px;margin-top:5px">수정</button></div></div>${l.yt?`<a class="yt-link" href="${escapeHtml(l.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>참고 영상</a>`:''}${photoStrip}</div>`;
+    return`<div class="log-item"><div class="log-top"><div><div class="log-name">${l.name}</div><div class="log-det">${det}${l.memo?' · '+escapeHtml(l.memo):''} <span style="color:var(--t3)">${l.time}</span></div><span class="pill">${l.cat}</span></div><div style="text-align:right"><div class="log-kcal">${l.kcal}kcal</div><div style="display:flex;gap:4px;justify-content:flex-end;margin-top:5px"><button onclick="editWorkout(${l.id})" style="background:transparent;border:1px solid var(--b);border-radius:999px;color:var(--t2);cursor:pointer;font-size:10px;padding:5px 8px">수정</button><button onclick="deleteWorkout(${l.id})" style="background:transparent;border:1px solid var(--b);border-radius:999px;color:var(--t3);cursor:pointer;font-size:10px;padding:5px 8px">삭제</button></div></div></div>${l.yt?`<a class="yt-link" href="${escapeHtml(l.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>참고 영상</a>`:''}${photoStrip}</div>`;
   }).join('');
 }
 function viewPhoto(src){
