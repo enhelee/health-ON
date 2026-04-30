@@ -444,7 +444,7 @@ input,textarea,select,button{color-scheme:light dark}
         <input type="checkbox" id="shareMealFeed" style="width:18px;height:18px;accent-color:#E8A020;cursor:pointer">
         <span style="font-size:12px;font-weight:600;color:#7A5500;flex:1">🥗 피드에도 공유 (식단 사진+영양정보)</span>
       </label>
-      <button class="btn-main" onclick="saveMeal()" style="margin-top:12px">기록 추가</button>
+      <button class="btn-main" id="mealSaveBtn" onclick="saveMeal()" style="margin-top:12px">기록 추가</button>
     </div>
 
     <div class="sl"><span id="dietListTitle">오늘 식단</span></div>
@@ -524,7 +524,7 @@ input,textarea,select,button{color-scheme:light dark}
         <input type="checkbox" id="shareFeed" style="width:18px;height:18px;accent-color:var(--p);cursor:pointer">
         <span style="font-size:12px;font-weight:600;color:var(--pd);flex:1">🌸 피드에도 공유 (인증샷+운동내용)</span>
       </label>
-      <button class="btn-main" onclick="addWorkout()">운동 기록 저장</button>
+      <button class="btn-main" id="workoutSaveBtn" onclick="addWorkout()">운동 기록 저장</button>
     </div>
     <div class="card">
       <div class="card-hd"><div class="hd-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1,9 4,5.5 7,7.5 10,3 11.5,4" stroke="var(--pd)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>오늘 기록</div>
@@ -567,7 +567,7 @@ input,textarea,select,button{color-scheme:light dark}
     <div class="sl" style="margin-top:18px">✍️ 글 남기기</div>
     <div class="card">
       <textarea class="my-post-input" id="myPostTxt" placeholder="오늘의 운동이나 식단을 공유해보세요 💪"></textarea>
-      <button class="btn-main" onclick="postFeed()" style="margin-top:0">공유하기</button>
+      <button class="btn-main" id="feedPostBtn" onclick="postFeed()" style="margin-top:0">공유하기</button>
     </div>
     <div class="sl">🌸 Health-ON(溫) 피드</div>
     <div class="card" id="feedList"><div class="empty">불러오는 중...</div></div>
@@ -792,6 +792,8 @@ let pendingMealPhoto=null;
 let recentDays=[],selectedRecentDate=null;
 let workoutMode='reps',favExercises=[];
 let rankGroupFilter='all';
+let editingMealId=null,editingWorkoutId=null,editingFeedId=null,editingFeedRaw=null;
+let feedCache=[];
 let profile={name:'',sex:'female',age:30,height:162,weight:58.2,goalWeight:55,goalMus:44,group:3,riskFactors:[],cardioImproved:false,namingJoined:false,actFactor:1.375,dietAdj:-300};
 let calcCal=1800,calcProt=80;
 let chatHistory=[],isStreaming=false;
@@ -1197,6 +1199,43 @@ async function handlePhotos(e){
 }
 function renderThumbs(){document.getElementById('photoThumbs').innerHTML=pendingPhotos.map((item,i)=>`<div class="p-thumb"><img src="${item.preview}"><button class="p-del" onclick="rmPhoto(${i})">✕</button></div>`).join('');}
 function rmPhoto(i){pendingPhotos.splice(i,1);renderThumbs();}
+async function persistTodayWorkouts(){
+  const uid=getUserId(),today=todayStr();
+  await sb.from('workouts').delete().eq('user_id',uid).eq('date',today);
+  if(wLogs.length)await sb.from('workouts').insert(wLogs.map(l=>({user_id:uid,date:today,data:l})));
+}
+function resetWorkoutForm(){
+  editingWorkoutId=null;
+  selectedEx=null;exShowAll=false;workoutMode='reps';
+  ['customEx','wMemo','ytUrl'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('wSets').value=3;document.getElementById('wReps').value=12;document.getElementById('wMins').value=0;
+  document.getElementById('ytPrev').style.display='none';document.getElementById('ytFrame').src='';
+  pendingPhotos=[];renderThumbs();renderGrid();
+  if(document.getElementById('shareFeed'))document.getElementById('shareFeed').checked=false;
+  const btn=document.getElementById('workoutSaveBtn');if(btn)btn.textContent='운동 기록 저장';
+  updateExInputMode();
+}
+function editWorkout(id){
+  const l=wLogs.find(w=>(w.id||0)===id);
+  if(!l){showToast('수정할 운동 기록을 찾지 못했어요');return;}
+  editingWorkoutId=id;
+  const known=EXERCISES.some(e=>e.name===l.name);
+  selectedEx=known?l.name:null;
+  document.getElementById('customEx').value=known?'':(l.name||'');
+  workoutMode=(l.mode==='time'||(!l.sets&&!l.reps&&l.mins>0))?'time':'reps';
+  document.getElementById('wSets').value=l.sets||0;
+  document.getElementById('wReps').value=l.reps||0;
+  document.getElementById('wMins').value=l.mins||0;
+  document.getElementById('wMemo').value=l.memo||'';
+  document.getElementById('ytUrl').value=l.yt||'';
+  if(l.yt&&getYtId(l.yt)){document.getElementById('ytFrame').src=`https://www.youtube.com/embed/${getYtId(l.yt)}`;document.getElementById('ytPrev').style.display='block';}
+  else{document.getElementById('ytPrev').style.display='none';document.getElementById('ytFrame').src='';}
+  pendingPhotos=(l.photos||[]).map(url=>({existingUrl:url,preview:url}));
+  if(document.getElementById('shareFeed'))document.getElementById('shareFeed').checked=false;
+  renderThumbs();renderGrid();updateExInputMode();
+  const btn=document.getElementById('workoutSaveBtn');if(btn)btn.textContent='운동 수정 저장';
+  document.getElementById('sc-workout')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 // ── 운동 저장 ──
 function getExerciseWeightKg(){
@@ -1240,15 +1279,17 @@ async function addWorkout(){
   try{
     if(pendingPhotos.length){
       showToast(`사진 ${pendingPhotos.length}장 업로드 중...`);
-      photos=await Promise.all(pendingPhotos.map(item=>uploadImageToStorage(item.file,'workouts')));
+      photos=await Promise.all(pendingPhotos.map(item=>item.file?uploadImageToStorage(item.file,'workouts'):item.existingUrl));
     }
   }catch(e){
     console.error('workout photo upload',e);
     showToast('운동 사진 업로드 실패 😢');
     return;
   }
-  wLogs.unshift({id:Date.now(),name,cat:ex?ex.cat:'기타',mode,sets,reps,mins,kcal,memo,yt,photos,photoCount:photos.length,time});
-  try{const uid=getUserId();const today=todayStr();await sb.from('workouts').delete().eq('user_id',uid).eq('date',today);if(wLogs.length)await sb.from('workouts').insert(wLogs.map(l=>({user_id:uid,date:today,data:l})));}catch(e){console.error(e);}
+  const savedWorkout={id:editingWorkoutId||Date.now(),name,cat:ex?ex.cat:'기타',mode,sets,reps,mins,kcal,memo,yt,photos,photoCount:photos.length,time:editingWorkoutId?(wLogs.find(l=>l.id===editingWorkoutId)?.time||time):time};
+  if(editingWorkoutId)wLogs=wLogs.map(l=>l.id===editingWorkoutId?savedWorkout:l);
+  else wLogs.unshift(savedWorkout);
+  try{await persistTodayWorkouts();}catch(e){console.error(e);}
   // 피드 자동 공유
   if(shouldShare){
     try{
@@ -1259,16 +1300,9 @@ async function addWorkout(){
       showToast('피드에 공유 완료! 🌸');
     }catch(e){console.error('feed share err',e);showToast('피드 공유 실패 (운동은 저장됨)');}
   }
-  renderAll();await loadRecentHistory();showToast(`${name} 저장 완료! 💪`);
-  selectedEx=null;exShowAll=false;
+  renderAll();await loadRecentHistory();showToast(editingWorkoutId?`${name} 수정 완료! 💪`:`${name} 저장 완료! 💪`);
   rememberFavExercise(name);
-  ['customEx','wMemo','ytUrl'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('wSets').value=3;document.getElementById('wReps').value=12;document.getElementById('wMins').value=0;
-  document.getElementById('ytPrev').style.display='none';document.getElementById('ytFrame').src='';
-  pendingPhotos=[];renderThumbs();renderGrid();
-  if(document.getElementById('shareFeed'))document.getElementById('shareFeed').checked=false;
-  workoutMode='reps';
-  updateExInputMode();
+  resetWorkoutForm();
 }
 
 // ── 식단 ──
@@ -1387,6 +1421,43 @@ function clearMealPhoto(){
   document.getElementById('mealPhotoImg').src='';
   document.getElementById('mealPhotoPreview').style.display='none';
 }
+async function persistMealsForDate(date){
+  const uid=getUserId();
+  await sb.from('meals').delete().eq('user_id',uid).eq('date',date);
+  if(meals.length)await sb.from('meals').insert(meals.map(m=>({user_id:uid,date,data:m})));
+}
+function resetMealForm(){
+  editingMealId=null;
+  document.getElementById('mealName').value='';
+  document.getElementById('inCal').value=0;
+  document.getElementById('inProt').value=0;
+  document.getElementById('inCarb').value=0;
+  document.getElementById('mealTime').value=currentTimeValue();
+  const mm=document.getElementById('mealMemo');if(mm)mm.value='';
+  if(document.getElementById('shareMealFeed'))document.getElementById('shareMealFeed').checked=false;
+  const btn=document.getElementById('mealSaveBtn');if(btn)btn.textContent='기록 추가';
+  clearMealPhoto();
+}
+function editMeal(id){
+  const m=meals.find(item=>(item.id||0)===id);
+  if(!m){showToast('수정할 식단 기록을 찾지 못했어요');return;}
+  editingMealId=id;
+  document.getElementById('mealName').value=m.name||'';
+  document.getElementById('mealType').value=m.mealType||'간식';
+  document.getElementById('mealTime').value=m.eatenTime||currentTimeValue();
+  document.getElementById('inCal').value=m.cal||0;
+  document.getElementById('inProt').value=m.prot||0;
+  document.getElementById('inCarb').value=m.carb||0;
+  const mm=document.getElementById('mealMemo');if(mm)mm.value=m.memo||'';
+  if(m.photo){
+    pendingMealPhoto={existingUrl:m.photo,preview:m.photo};
+    document.getElementById('mealPhotoImg').src=m.photo;
+    document.getElementById('mealPhotoPreview').style.display='block';
+  }else clearMealPhoto();
+  if(document.getElementById('shareMealFeed'))document.getElementById('shareMealFeed').checked=false;
+  const btn=document.getElementById('mealSaveBtn');if(btn)btn.textContent='식단 수정 저장';
+  document.getElementById('sc-diet')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 async function saveMeal(){
   const name=document.getElementById('mealName').value.trim();
@@ -1404,28 +1475,27 @@ async function saveMeal(){
     if(pendingMealPhoto?.file){
       showToast('식단 사진 업로드 중...');
       photo=await uploadImageToStorage(pendingMealPhoto.file,'meals');
-    }
+    }else if(pendingMealPhoto?.existingUrl)photo=pendingMealPhoto.existingUrl;
   }catch(e){
     console.error('meal photo upload',e);
     showToast('식단 사진 업로드 실패 😢');
     return;
   }
   const meal={
-    id:Date.now(),
+    id:editingMealId||Date.now(),
     name:name||'(이름 없음)',
     cal,prot,carb,mealType,eatenTime,memo,
     photo,
-    time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})
+    time:editingMealId?(meals.find(m=>m.id===editingMealId)?.time||new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})):new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})
   };
-  meals.push(meal);
+  if(editingMealId)meals=meals.map(m=>m.id===editingMealId?meal:m);
+  else meals.push(meal);
   // 시간순 정렬
   meals.sort((a,b)=>(a.eatenTime||'').localeCompare(b.eatenTime||''));
   try{
-    const uid=getUserId();
-    await sb.from('meals').delete().eq('user_id',uid).eq('date',date);
-    if(meals.length)await sb.from('meals').insert(meals.map(m=>({user_id:uid,date,data:m})));
+    await persistMealsForDate(date);
   }catch(e){console.error('saveMeal',e);showToast('저장 실패 😢');return;}
-  if(shouldShare){
+  if(shouldShare&&!editingMealId){
     try{
       const mealLabel=mealType||'식단';
       const txt=`🥗 ${mealLabel}\n${meal.name}${memo?'\n📝 '+memo:''}\n💪 단백질 ${prot}g${cal>0?` · ${cal}kcal`:''}${carb>0?` · 탄수 ${carb}g`:''}`;
@@ -1439,16 +1509,8 @@ async function saveMeal(){
   }
   renderAll();
   await loadRecentHistory();
-  showToast(`${mealType} 저장 완료! 🥗`);
-  // 입력 초기화
-  document.getElementById('mealName').value='';
-  document.getElementById('inCal').value=0;
-  document.getElementById('inProt').value=0;
-  document.getElementById('inCarb').value=0;
-  document.getElementById('mealTime').value=currentTimeValue();
-  const mm=document.getElementById('mealMemo');if(mm)mm.value='';
-  if(document.getElementById('shareMealFeed'))document.getElementById('shareMealFeed').checked=false;
-  clearMealPhoto();
+  showToast(editingMealId?`${mealType} 수정 완료! 🥗`:`${mealType} 저장 완료! 🥗`);
+  resetMealForm();
 }
 
 async function deleteMeal(id){
@@ -1456,10 +1518,9 @@ async function deleteMeal(id){
   meals=meals.filter(m=>m.id!==id);
   const date=getDietDate();
   try{
-    const uid=getUserId();
-    await sb.from('meals').delete().eq('user_id',uid).eq('date',date);
-    if(meals.length)await sb.from('meals').insert(meals.map(m=>({user_id:uid,date,data:m})));
+    await persistMealsForDate(date);
   }catch(e){console.error('deleteMeal',e);}
+  if(editingMealId===id)resetMealForm();
   renderAll();
   await loadRecentHistory();
   showToast('삭제됨');
@@ -1627,22 +1688,56 @@ async function loadFeed(){
   try{
     const{data,error}=await sb.from('feed').select('*').order('created_at',{ascending:false}).limit(50);
     if(error||!data?.length){el.innerHTML='<div class="empty">아직 글이 없어요 🌸<br>첫 번째로 공유해보세요!</div>';return;}
+    feedCache=data;
     el.innerHTML=data.map(p=>{
       const c=parseFeedContent(p.content);
+      const isMine=p.user_id===getUserId();
       const txtHtml=escapeHtml(c.text).replace(/\n/g,'<br>');
       const photoStrip=c.photos.length?`<div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px">${c.photos.map(ph=>`<img src="${ph}" onclick="viewPhoto('${ph.replace(/'/g,"\\'")}')" style="width:120px;height:120px;border-radius:10px;object-fit:cover;border:0.5px solid var(--b);flex-shrink:0;cursor:pointer">`).join('')}</div>`:'';
       const ytLink=c.yt?`<a class="yt-link" href="${escapeHtml(c.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>YouTube 영상</a>`:'';
       const workoutBadge=c.workout?`<span style="display:inline-block;font-size:9px;background:#FFE6EE;color:#C03668;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">💪 운동 인증</span>`:'';
       const mealBadge=c.meal?`<span style="display:inline-block;font-size:9px;background:#FFF3D0;color:#7A5500;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600">🥗 식단 공유</span>`:'';
-      return`<div class="feed-item"><div class="fav">${(p.name||'?')[0]}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span><button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
+      return`<div class="feed-item"><div class="fav">${(p.name||'?')[0]}</div><div style="flex:1"><div class="f-name">${p.name||'익명'}${workoutBadge}${mealBadge}</div><div class="f-txt">${txtHtml}</div>${ytLink}${photoStrip}<div class="f-meta"><span class="f-time">${new Date(p.created_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>${isMine?`<button class="cheer-btn" onclick="editFeed(${p.id})">수정</button>`:''}<button class="cheer-btn" onclick="cheer(${p.id})">🩷 ${p.cheers||0}</button></div></div></div>`;
     }).join('');
   }catch(e){el.innerHTML='<div class="empty">불러오기 실패 😢</div>';}
+}
+function resetFeedForm(){
+  editingFeedId=null;editingFeedRaw=null;
+  document.getElementById('myPostTxt').value='';
+  const btn=document.getElementById('feedPostBtn');if(btn)btn.textContent='공유하기';
+}
+function editFeed(id){
+  const p=feedCache.find(row=>row.id===id);
+  if(!p){showToast('수정할 피드를 찾지 못했어요');return;}
+  if(p.user_id!==getUserId()){showToast('내가 올린 피드만 수정할 수 있어요');return;}
+  editingFeedId=id;editingFeedRaw=p.content;
+  document.getElementById('myPostTxt').value=parseFeedContent(p.content).text||'';
+  const btn=document.getElementById('feedPostBtn');if(btn)btn.textContent='피드 수정 저장';
+  document.getElementById('myPostTxt').focus();
+}
+function buildEditedFeedContent(raw,text){
+  if(typeof raw==='string'&&raw.trim().startsWith('{')){
+    try{
+      const obj=JSON.parse(raw);
+      obj.text=text;
+      return JSON.stringify(obj);
+    }catch(e){/* fallthrough */}
+  }
+  return text;
 }
 async function postFeed(){
   const txt=document.getElementById('myPostTxt').value.trim();if(!txt){showToast('내용을 입력해주세요');return;}
   try{
-    await sb.from('feed').insert({user_id:getUserId(),name:profile.name,content:txt,cheers:0});
-    document.getElementById('myPostTxt').value='';showToast('공유 완료! 🌸');loadFeed();
+    if(editingFeedId){
+      await sb.from('feed').update({content:buildEditedFeedContent(editingFeedRaw,txt)}).eq('id',editingFeedId).eq('user_id',getUserId());
+      showToast('피드 수정 완료! 🌸');
+      resetFeedForm();
+    }else{
+      await sb.from('feed').insert({user_id:getUserId(),name:profile.name,content:txt,cheers:0});
+      showToast('공유 완료! 🌸');
+      resetFeedForm();
+    }
+    loadFeed();
   }catch(e){showToast('공유 실패 😢');}
 }
 async function cheer(id){
@@ -1820,7 +1915,10 @@ function renderMeals(){
         <div style="font-size:11px;color:#7A5500;margin-top:3px;font-weight:600">💪 단백질 ${m.prot||0}g${calTxt}${carbTxt}</div>
         ${memoHtml}
       </div>
-      <button onclick="deleteMeal(${id})" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:6px;flex-shrink:0">✕</button>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button onclick="editMeal(${id})" style="background:transparent;border:1px solid var(--b);border-radius:999px;color:var(--t2);cursor:pointer;font-size:10px;padding:5px 8px">수정</button>
+        <button onclick="deleteMeal(${id})" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:6px">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1923,7 +2021,7 @@ function renderWLogs(){
     const photos=l.photos||[];
     const det=formatWorkoutDetail(l);
     const photoStrip=photos.length?`<div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px">${photos.map(p=>`<img src="${p}" onclick="viewPhoto('${p.replace(/'/g,"\\'")}')" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:0.5px solid var(--b);flex-shrink:0;cursor:pointer">`).join('')}</div>`:'';
-    return`<div class="log-item"><div class="log-top"><div><div class="log-name">${l.name}</div><div class="log-det">${det}${l.memo?' · '+escapeHtml(l.memo):''} <span style="color:var(--t3)">${l.time}</span></div><span class="pill">${l.cat}</span></div><div class="log-kcal">${l.kcal}kcal</div></div>${l.yt?`<a class="yt-link" href="${escapeHtml(l.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>참고 영상</a>`:''}${photoStrip}</div>`;
+    return`<div class="log-item"><div class="log-top"><div><div class="log-name">${l.name}</div><div class="log-det">${det}${l.memo?' · '+escapeHtml(l.memo):''} <span style="color:var(--t3)">${l.time}</span></div><span class="pill">${l.cat}</span></div><div style="text-align:right"><div class="log-kcal">${l.kcal}kcal</div><button onclick="editWorkout(${l.id})" style="background:transparent;border:1px solid var(--b);border-radius:999px;color:var(--t2);cursor:pointer;font-size:10px;padding:5px 8px;margin-top:5px">수정</button></div></div>${l.yt?`<a class="yt-link" href="${escapeHtml(l.yt)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 12 12"><rect width="12" height="12" rx="3" fill="#FF0000"/><polygon points="4.5,3 9,6 4.5,9" fill="#fff"/></svg>참고 영상</a>`:''}${photoStrip}</div>`;
   }).join('');
 }
 function viewPhoto(src){
