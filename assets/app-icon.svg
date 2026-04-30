@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="96" x2="904" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8A9C5"/>
+      <stop offset="0.48" stop-color="#E8628A"/>
+      <stop offset="1" stop-color="#B42E63"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="31%" cy="22%" r="62%">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#7A143B" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <circle cx="804" cy="174" r="164" fill="#FFFFFF" opacity="0.08"/>
+  <circle cx="156" cy="812" r="210" fill="#7A143B" opacity="0.09"/>
+  <g filter="url(#softShadow)">
+    <circle cx="512" cy="434" r="232" fill="#FFFFFF" opacity="0.18"/>
+    <path d="M512 594C487 571 371 484 371 390C371 322 424 278 482 307C496 314 506 325 512 338C518 325 528 314 542 307C600 278 653 322 653 390C653 484 537 571 512 594Z" fill="#FFFFFF"/>
+    <path d="M512 594C487 571 371 484 371 390C371 322 424 278 482 307C496 314 506 325 512 338C518 325 528 314 542 307C600 278 653 322 653 390C653 484 537 571 512 594Z" fill="#FFFFFF"/>
+    <path d="M688 254V354M638 304H738" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round"/>
+  </g>
+  <text x="512" y="765" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="166" font-weight="900" fill="#FFFFFF" letter-spacing="-7">ON</text>
+  <text x="512" y="850" text-anchor="middle" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#FFE7F0" letter-spacing="8">HEALTH 溫</text>
+</svg>
