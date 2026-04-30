@@ -971,6 +971,7 @@ async function saveProfile(){
   if(profile.name)localStorage.setItem('hlon_username',profile.name);
   showToast('프로필 저장 완료! 평가 점수도 반영됐어요 ✨');
   renderAvatarTargets();
+  try{loadFeed();renderRanking();}catch(e){console.error('profile rerender',e);}
 }
 
 // ── 유틸 ──
@@ -1205,21 +1206,19 @@ function isTimeOnlyEx(name){
   const kw=['걷기','달리기','런닝','조깅','자전거','사이클','수영','등산','요가','필라테스','HIIT','킥복싱','댄스','에어로빅','헬스','근력운동','상체운동','하체운동','전신운동'];
   return kw.some(k=>name.includes(k));
 }
-function canUseTimeMode(name){return isTimeOnlyEx(name);}
+function canUseTimeMode(name){return true;}
 function setWorkoutMode(mode){
   const custom=document.getElementById('customEx')?.value.trim();
   const name=custom||selectedEx;
   if(mode==='reps'&&isTimeOnlyEx(name)){showToast('이 운동은 시간으로만 기록해요');return;}
-  if(mode==='time'&&!canUseTimeMode(name)){showToast('개별 근력 운동은 세트와 횟수로 기록해요');return;}
   workoutMode=mode;
   updateExInputMode();
 }
-function getWorkoutMode(name){return isTimeOnlyEx(name)?'time':'reps';}
+function getWorkoutMode(name){return isTimeOnlyEx(name)?'time':workoutMode;}
 function updateExInputMode(){
   const custom=document.getElementById('customEx')?.value.trim();
   const name=custom||selectedEx;
   const timeAllowed=canUseTimeMode(name);
-  if(!timeAllowed&&workoutMode==='time')workoutMode='reps';
   const mode=getWorkoutMode(name);
   const timeOnly=mode==='time';
   const setsBox=document.getElementById('boxSets');
@@ -1229,7 +1228,7 @@ function updateExInputMode(){
   const timeBtn=document.getElementById('modeTimeBtn');
   if(repsBtn){repsBtn.classList.toggle('on',!timeOnly);repsBtn.disabled=isTimeOnlyEx(name);}
   if(timeBtn)timeBtn.classList.toggle('on',timeOnly);
-  if(timeBtn)timeBtn.disabled=!timeAllowed;
+  if(timeBtn)timeBtn.disabled=false;
   if(setsBox)setsBox.style.display=timeOnly?'none':'';
   if(repsBox)repsBox.style.display=timeOnly?'none':'';
   if(minsBox)minsBox.style.display=timeOnly?'':'none';
