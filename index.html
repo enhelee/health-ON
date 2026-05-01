@@ -671,7 +671,7 @@ input,textarea,select,button{color-scheme:light dark}
       <div id="calGrid" class="cal-grid"></div>
       <!-- 범례 -->
       <div class="cal-legend">
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#C08000"></div>단백질 목표 달성</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#C08000"></div>식단 기록</div>
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--p)"></div>운동 기록</div>
         <div class="cal-legend-item" style="gap:5px"><div style="width:14px;height:14px;border-radius:4px;background:var(--pll);border:1px solid var(--b)"></div>기록 있는 날</div>
       </div>
@@ -3130,8 +3130,8 @@ function renderCal(){
     let dots='', hasRecord=false;
     if(calData[ds]){
       const dm=calData[ds].meals||[], dw=calData[ds].workouts||[];
-      const totProt=dm.reduce((s,m)=>s+(parseInt(m.prot)||0),0);
-      if(totProt>0){hasRecord=true;dots+=`<div class="cal-dot cal-dot-p"></div>`;}
+      // 식단 기록이 하나라도 있으면 도트 표시 (단백질 0이어도 포함)
+      if(dm.length>0){hasRecord=true;dots+=`<div class="cal-dot cal-dot-p"></div>`;}
       if(dw.length>0){hasRecord=true;dots+=`<div class="cal-dot cal-dot-w"></div>`;}
     }
     const cls=['cal-day',
