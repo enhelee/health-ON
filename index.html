@@ -499,6 +499,42 @@ input,textarea,select,button{color-scheme:light dark}
   [style*="border:1.5px solid #E8C26F"],[style*="border:1px solid #E8C26F"]{border-color:var(--gold-b)!important}
   [style*="border:1px solid #F5D0DF"],[style*="border:1.5px solid #F5D0DF"]{border-color:var(--b)!important}
 }
+/* ── 피드백 모달 ── */
+.feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;display:flex;align-items:flex-end;justify-content:center}
+.feedback-overlay.hidden{display:none}
+.feedback-box{background:var(--s);border-radius:20px 20px 0 0;padding:20px 18px 32px;width:100%;max-width:390px}
+.feedback-title{font-size:15px;font-weight:800;color:var(--t1);margin-bottom:14px}
+.feedback-cats{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.feedback-cat{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--b);background:transparent;color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s}
+.feedback-cat.on{background:var(--p);color:#fff;border-color:var(--p)}
+.feedback-textarea{width:100%;min-height:100px;border:1.5px solid var(--b);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:var(--t1);background:var(--s);resize:none;outline:none;line-height:1.6}
+.feedback-textarea:focus{border-color:var(--p)}
+.feedback-hint{font-size:10px;color:var(--t3);margin:6px 0 14px}
+/* ── 튜토리얼 팝업 ── */
+.tut-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:flex-end;justify-content:center}
+.tut-overlay.hidden{display:none}
+.tut-box{background:var(--s);border-radius:24px 24px 0 0;padding:22px 20px 30px;width:100%;max-width:390px;max-height:82vh;overflow-y:auto}
+.tut-step{display:none}
+.tut-step.on{display:block}
+.tut-icon{font-size:48px;text-align:center;margin:6px 0 14px}
+.tut-title{font-size:17px;font-weight:800;color:var(--t1);text-align:center;margin-bottom:8px}
+.tut-desc{font-size:13px;color:var(--t2);line-height:1.65;text-align:center}
+.tut-tip{background:var(--pl);border:0.5px solid var(--b);border-radius:10px;padding:10px 13px;margin-top:14px;font-size:12px;color:var(--pd);font-weight:600;line-height:1.55;text-align:left}
+.tut-dots{display:flex;justify-content:center;gap:7px;margin:18px 0 14px}
+.tut-dot{width:7px;height:7px;border-radius:50%;background:var(--b);transition:background .2s,transform .2s;cursor:pointer}
+.tut-dot.on{background:var(--p);transform:scale(1.35)}
+.tut-nav{display:flex;gap:8px;margin-top:4px}
+.tut-btn-skip{flex:1;padding:12px;border:1.5px solid var(--b);border-radius:var(--rs);font-size:12px;font-weight:600;color:var(--t3);background:transparent;cursor:pointer;font-family:inherit}
+.tut-btn-next{flex:2;padding:12px;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--p),var(--pd));cursor:pointer;font-family:inherit}
+/* ── 인바디 기록 목록 ── */
+.ib-record{display:flex;align-items:center;gap:8px;padding:9px 11px;border:0.5px solid var(--b);border-radius:9px;background:var(--pll);margin-bottom:7px}
+.ib-record-date{font-size:11px;font-weight:700;color:var(--t1);min-width:44px}
+.ib-record-vals{flex:1;font-size:10px;color:var(--t2);line-height:1.5}
+.ib-record-del{flex-shrink:0;border:1px solid var(--pm);border-radius:6px;background:transparent;color:var(--pd);font-size:10px;font-weight:600;padding:4px 9px;cursor:pointer;font-family:inherit}
+/* ── 랭킹 미등록 ── */
+.rank-unreg-zone{text-align:center;padding:10px 0 6px}
+.rank-unreg-badge{display:inline-block;background:var(--b);color:var(--t3);font-size:10px;font-weight:700;padding:3px 11px;border-radius:999px;letter-spacing:.4px}
+.rank-unreg-hint{font-size:10px;color:var(--t3);margin-top:5px;line-height:1.45}
 </style>
 
 <div class="app">
@@ -873,6 +909,10 @@ input,textarea,select,button{color-scheme:light dark}
     <div class="card" style="padding:14px 12px 10px"><canvas id="wChart" style="max-height:160px"></canvas></div>
     <div class="sl">체지방률 / 근육량</div>
     <div class="card" style="padding:14px 12px 10px"><canvas id="bChart" style="max-height:160px"></canvas></div>
+    <div style="background:var(--pl);border:0.5px solid var(--b);border-radius:10px;padding:11px 14px;margin-bottom:10px;font-size:11px;color:var(--pd);font-weight:600;line-height:1.55">
+      📊 인바디를 등록해야 점수·랭킹이 계산돼요<br>
+      <span style="font-weight:400;color:var(--t2)">체지방량·근육량 변화를 기준으로 점수가 자동 반영돼요. 1차 시작 인바디부터 꼭 등록해 두세요!</span>
+    </div>
     <div class="sl">새 기록 입력</div>
     <div class="card">
       <div class="fi"><div><div class="fi-l">체중</div><div class="fi-s">kg</div></div><input class="fi-in" type="number" step="0.1" id="ib-wt" value="58.2" oninput="updateBmiPreview();updateFatKg()"></div>
@@ -887,9 +927,11 @@ input,textarea,select,button{color-scheme:light dark}
       <div style="font-size:10px;color:var(--t3);margin:0 0 10px;line-height:1.5">💡 체지방률만 입력하면 체지방량(kg)이 자동계산돼요. 직접 수정도 가능해요.</div>
       <button class="btn-main" onclick="saveInbody()">인바디 저장</button>
     </div>
+    <div class="sl" id="ibodyListSl" style="display:none">등록된 기록</div>
+    <div id="ibodyList"></div>
   </div>
 
-  
+
   <!-- ── 커뮤니티 ── -->
   <div id="sc-feed" class="screen">
     <div class="community-switch">
@@ -935,7 +977,23 @@ input,textarea,select,button{color-scheme:light dark}
       <div class="profile-name" id="profName">-</div>
       <div class="profile-bmr" id="profBmr">프로필을 입력하면 칼로리가 자동 계산돼요</div>
     </div>
-    <div id="profileMainPane" class="profile-pane">
+
+    <!-- ── 프로필 요약 패널 (기본 표시) ── -->
+    <div id="profileSummaryPane" class="profile-pane">
+      <div style="background:var(--pl);border:0.5px solid var(--b);border-radius:10px;padding:11px 14px;margin-bottom:11px;font-size:11px;line-height:1.6">
+        <div style="font-weight:700;color:var(--pd);margin-bottom:3px">📌 프로필 정보 안내</div>
+        <div style="color:var(--t2)">프로필(나이·키·체중)은 <b style="color:var(--t1)">칼로리·단백질 목표 계산</b>에 사용돼요.<br>점수·랭킹은 인바디 기록만 기준이에요.</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div id="profSummaryContent" style="font-size:12px;color:var(--t2);line-height:1.8">설정된 정보가 없어요. 아래 버튼으로 입력해보세요!</div>
+      </div>
+      <button class="btn-main" style="margin-top:10px" onclick="showProfilePane('main')">⚙️ 프로필 설정 편집</button>
+      <button class="btn-out" onclick="showProfilePane('group')">👥 그룹 설정</button>
+      <button class="btn-out" onclick="showProfilePane('bonus')">⭐ 평가 가점 설정</button>
+      <button class="btn-out" style="color:var(--pd);border-color:var(--pm)" onclick="openFeedback()">💬 버그·건의사항 전달하기</button>
+    </div>
+
+    <div id="profileMainPane" class="profile-pane" hidden>
     <div class="profile-guide" id="profileGuide">
       <div class="profile-guide-title">처음 설정하면 좋은 것</div>
       <div class="profile-guide-grid">
@@ -1039,7 +1097,7 @@ input,textarea,select,button{color-scheme:light dark}
     </div>
     <div id="profileGroupPane" class="profile-pane" hidden>
       <div class="profile-subhead">
-        <button type="button" class="profile-back" onclick="showProfilePane('main')">← 프로필</button>
+        <button type="button" class="profile-back" onclick="showProfilePane('summary')">← 프로필</button>
         <div class="profile-subtitle"><div class="k">랭킹 분류</div><div class="v">참여 그룹 선택</div></div>
       </div>
       <div class="card">
@@ -1050,7 +1108,7 @@ input,textarea,select,button{color-scheme:light dark}
     </div>
     <div id="profileBonusPane" class="profile-pane" hidden>
       <div class="profile-subhead">
-        <button type="button" class="profile-back" onclick="showProfilePane('main')">← 프로필</button>
+        <button type="button" class="profile-back" onclick="showProfilePane('summary')">← 프로필</button>
         <div class="profile-subtitle"><div class="k">회사 평가 기준</div><div class="v">평가 가점 선택</div></div>
       </div>
       <div class="card">
@@ -1217,7 +1275,7 @@ function getUserId(){
 }
 
 // ── 상태 ──
-let wLogs=[],meals=[],waterAmt=0,selectedEx=null,currentCat='전체',exShowAll=false,pendingPhotos=[],ibodyHistory=[];
+let wLogs=[],meals=[],waterAmt=0,selectedEx=null,currentCat='전체',exShowAll=false,pendingPhotos=[],ibodyHistory=[],ibodyRecords=[];
 let currentDietDate=null;
 let pendingMealPhoto=null;
 let currentWorkoutDate=null;
@@ -1243,7 +1301,7 @@ function goTab(id,btn){
   btn.classList.add('on');
   if(id==='inbody')setTimeout(()=>{drawCharts();updateBmiPreview();},80);
   if(id==='feed')renderCommunityView();
-  if(id==='profile'){showProfilePane('main');renderGroups();renderPhases();renderEvalInputs();renderProfileSummaries();}
+  if(id==='profile'){showProfilePane('summary');renderGroups();renderPhases();renderEvalInputs();renderProfileSummaries();}
   if(id==='diet'){
     const dd=document.getElementById('dietDate');
     if(dd&&!dd.value){dd.value=todayStr();currentDietDate=todayStr();}
@@ -1322,8 +1380,9 @@ function renderAvatarTargets(){
   const ae=document.getElementById('avatarEmoji');
   if(ae&&document.activeElement!==ae)ae.value=profile.avatarType==='emoji'?(profile.avatarEmoji||''):'';
 }
-function showProfilePane(pane='main'){
+function showProfilePane(pane='summary'){
   const panes={
+    summary:document.getElementById('profileSummaryPane'),
     main:document.getElementById('profileMainPane'),
     group:document.getElementById('profileGroupPane'),
     bonus:document.getElementById('profileBonusPane')
@@ -1331,9 +1390,24 @@ function showProfilePane(pane='main'){
   Object.entries(panes).forEach(([key,el])=>{if(el)el.hidden=key!==pane;});
   if(pane==='group')renderGroups();
   if(pane==='bonus')renderEvalInputs();
+  if(pane==='summary')renderProfileSummaryCard();
   renderProfileSummaries();
   const profileScreen=document.getElementById('sc-profile');
   if(profileScreen)profileScreen.scrollTop=0;
+}
+function renderProfileSummaryCard(){
+  const el=document.getElementById('profSummaryContent');
+  if(!el)return;
+  const rows=[];
+  if(profile.name)rows.push(`닉네임 <b style="color:var(--t1)">${profile.name}</b>`);
+  if(profile.gender)rows.push(`성별 <b style="color:var(--t1)">${profile.gender==='female'?'여성':'남성'}</b>`);
+  if(profile.age)rows.push(`나이 <b style="color:var(--t1)">${profile.age}세</b>`);
+  if(profile.height)rows.push(`키 <b style="color:var(--t1)">${profile.height}cm</b>`);
+  if(profile.weight)rows.push(`현재 체중 <b style="color:var(--t1)">${profile.weight}kg</b>`);
+  if(profile.goalWeight)rows.push(`목표 체중 <b style="color:var(--t1)">${profile.goalWeight}kg</b>`);
+  if(calcCal)rows.push(`일일 칼로리 목표 <b style="color:var(--pd)">${calcCal.toLocaleString()}kcal</b>`);
+  if(calcProt)rows.push(`단백질 목표 <b style="color:var(--pd)">${calcProt}g</b>`);
+  el.innerHTML=rows.length?rows.join(' &nbsp;·&nbsp;<br>') : '설정된 정보가 없어요. 아래 버튼으로 입력해보세요!';
 }
 function renderProfileSummaries(){
   const groupEl=document.getElementById('profileGroupSummary');
@@ -1478,7 +1552,7 @@ async function saveProfile(){
   }catch(e){console.error(e);}
   if(profile.name)localStorage.setItem('hlon_username',profile.name);
   showToast(oldName!==profile.name?'닉네임 변경 완료! 피드에도 반영됐어요 ✨':'프로필 저장 완료! 평가 점수도 반영됐어요 ✨');
-  showProfilePane('main');
+  showProfilePane('summary');
   renderAvatarTargets();
   try{loadFeed();renderRanking();}catch(e){console.error('profile rerender',e);}
 }
@@ -1985,6 +2059,8 @@ async function init(){
   // 마지막 안전망: uid 있는데 username 못 살린 경우 → 모달 표시
   const _n=localStorage.getItem('hlon_username');
   if(!_n||!_n.trim()){showLoginModal();}
+  // 첫 방문 튜토리얼
+  try{setTimeout(()=>showTutorialIfNeeded(),800);}catch(e){}
 }
 
 // ── 운동 그리드 ──
@@ -2661,6 +2737,7 @@ async function saveInbody(){
   let all=ibodyHistory||[];all.push({date,dateIso,wt,fat,fatkg,mus,vfat,bmi});if(all.length>12)all=all.slice(-12);ibodyHistory=all;
   document.getElementById('hmWt').innerHTML=wt+'<span class="su">kg</span>';
   drawCharts();updateBmiPreview();showToast('인바디 저장 완료! 📊');
+  renderRanking();
 }
 
 // ── 피드 ──
@@ -2951,6 +3028,7 @@ async function renderRanking(){
         avatarType:d.avatarType||'initial',
         avatarEmoji:d.avatarEmoji||'',
         avatarPhoto:d.avatarPhoto||'',
+        hasInbody:(inbodyByUser[r.id]||[]).length>0,
         ...metrics,
         risk:isMe?bonus.riskScore:d.riskScore||0,
         cardio:isMe?bonus.cardioScore:d.cardioScore||0,
@@ -2966,16 +3044,40 @@ async function renderRanking(){
       el.innerHTML=`<div class="empty">${group?group.label:'선택한 그룹'} 참여자가 아직 없어요.</div>`;
       return;
     }
-    const sorted=filtered.sort((a,b)=>calcEval(b).total-calcEval(a).total);
+    // 인바디 등록자 먼저(점수 내림차순), 미등록자 뒤로
+    const sorted=filtered.sort((a,b)=>{
+      if(a.hasInbody!==b.hasInbody)return a.hasInbody?-1:1;
+      return calcEval(b).total-calcEval(a).total;
+    });
+    // 인바디 등록자만 메달/순위 부여
+    let rankIdx=0;
     el.innerHTML=sorted.map((m,i)=>{
       const s=calcEval(m);
-      const isFirst=i===0;
       const group=HEALTHON_GROUPS.find(g=>g.id===m.group)?.label||`그룹${m.group}`;
+      const meTag=m.isMe?'<span style="font-size:9px;background:var(--p);color:#fff;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:5px">나</span>':'';
+      if(!m.hasInbody){
+        // 미등록 카드
+        return`<div class="rank-card${m.isMe?' me':''}">
+          <div class="rank-top">
+            <div class="rank-num" style="color:var(--t3);font-size:13px">-</div>
+            <div class="rank-av" style="background:${m.color};color:${m.txtColor};opacity:.6">${avatarHtml(m,m.name)}</div>
+            <div class="rank-info"><div class="rank-name" style="opacity:.7">${m.name}${meTag}</div><div class="rank-detail">${group}</div></div>
+            <div class="rank-pct" style="font-size:11px;color:var(--t3)">-</div>
+          </div>
+          <div class="rank-unreg-zone">
+            <div class="rank-unreg-badge">인바디 미등록</div>
+            <div class="rank-unreg-hint">인바디를 등록하면 점수가 자동 계산돼요 ⚖️</div>
+          </div>
+        </div>`;
+      }
+      const isFirst=rankIdx===0;
+      const medal=medals[rankIdx]||(rankIdx+1);
+      rankIdx++;
       return`<div class="rank-card${isFirst?' first':''}${m.isMe?' me':''}">
         <div class="rank-top">
-          <div class="rank-num">${medals[i]||i+1}</div>
+          <div class="rank-num">${medal}</div>
           <div class="rank-av" style="background:${m.color};color:${m.txtColor}">${avatarHtml(m,m.name)}</div>
-          <div class="rank-info"><div class="rank-name">${m.name}${m.isMe?'<span style="font-size:9px;background:var(--p);color:#fff;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:5px">나</span>':''}</div><div class="rank-detail">${group} · ①~⑥ 합산 점수</div></div>
+          <div class="rank-info"><div class="rank-name">${m.name}${meTag}</div><div class="rank-detail">${group} · ①~⑥ 합산 점수</div></div>
           <div class="rank-pct">${s.total}</div>
         </div>
         <div class="rank-score-grid">
@@ -3567,8 +3669,8 @@ function viewPhoto(src){
 // ── 인바디 차트 ──
 async function drawCharts(){
   try{
-    const{data}=await sb.from('inbody').select('data').eq('user_id',getUserId()).order('created_at',{ascending:true}).limit(12);
-    if(data?.length)ibodyHistory=data.map(r=>r.data);
+    const{data}=await sb.from('inbody').select('id,data,created_at').eq('user_id',getUserId()).order('created_at',{ascending:true}).limit(12);
+    if(data?.length){ibodyHistory=data.map(r=>r.data);ibodyRecords=data;}
   }catch(e){}
   let all=ibodyHistory||[];
   const wc=document.getElementById('wChart'),bc=document.getElementById('bChart');
@@ -3709,6 +3811,41 @@ async function drawCharts(){
       }
     });
   }
+  renderInbodyList();
+}
+
+function renderInbodyList(){
+  const el=document.getElementById('ibodyList');
+  const sl=document.getElementById('ibodyListSl');
+  if(!el)return;
+  const recs=[...ibodyRecords].reverse(); // 최신순
+  if(!recs.length){el.innerHTML='';if(sl)sl.style.display='none';return;}
+  if(sl)sl.style.display='';
+  el.innerHTML=recs.map(r=>{
+    const d=r.data||{};
+    const label=d.date||d.dateIso||'날짜 없음';
+    return`<div class="ib-record">
+      <div class="ib-record-date">${label}</div>
+      <div class="ib-record-vals">
+        체중 ${d.wt||'-'}kg · 체지방 ${d.fatkg||'-'}kg (${d.fat||'-'}%)<br>
+        근육 ${d.mus||'-'}kg · 내장지방 ${d.vfat||'-'}레벨
+      </div>
+      <button class="ib-record-del" onclick="deleteInbody('${r.id}','${label}')">삭제</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteInbody(id, label){
+  if(!confirm(`⚠️ [${label}] 인바디 기록을 삭제할까요?\n\n이 기록이 점수 기준점(1차 시작)이면 랭킹 점수에 영향을 줄 수 있어요.`))return;
+  try{
+    const uid=getUserId();
+    await sb.from('inbody').delete().eq('id',id).eq('user_id',uid);
+    ibodyRecords=ibodyRecords.filter(r=>r.id!==id);
+    ibodyHistory=ibodyRecords.map(r=>r.data);
+    showToast('인바디 기록 삭제됨');
+    drawCharts();
+    renderRanking();
+  }catch(e){console.error(e);showToast('삭제 실패 😢');}
 }
 
 
@@ -3837,5 +3974,159 @@ setTimeout(()=>{
     console.warn('emergency: showing login modal');
   }
 },1000);
+
+// ── 피드백 ──
+let feedbackCat='버그';
+function openFeedback(){
+  feedbackCat='버그';
+  document.querySelectorAll('.feedback-cat').forEach(b=>{
+    b.classList.toggle('on',b.dataset.cat==='버그');
+  });
+  document.getElementById('feedbackText').value='';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+function closeFeedback(){
+  document.getElementById('feedbackOverlay').classList.add('hidden');
+}
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.feedback-cat');
+  if(!btn)return;
+  feedbackCat=btn.dataset.cat;
+  document.querySelectorAll('.feedback-cat').forEach(b=>b.classList.toggle('on',b===btn));
+});
+async function submitFeedback(){
+  const content=document.getElementById('feedbackText').value.trim();
+  if(!content){showToast('내용을 입력해주세요');return;}
+  try{
+    const uid=getUserId();
+    const name=profile.name||localStorage.getItem('hlon_username')||'익명';
+    await sb.from('feedback').insert({user_id:uid,user_name:name,category:feedbackCat,content});
+    closeFeedback();
+    showToast('전달 완료! 감사해요 💌');
+  }catch(e){console.error(e);showToast('전달 실패 😢 다시 시도해주세요');}
+}
+
+// ── 튜토리얼 ──
+const TUT_STEPS=[
+  {
+    icon:'👋',
+    title:'Health-ON(溫)에 오신 걸 환영해요!',
+    desc:'4가지만 알면 바로 시작할 수 있어요.\n잠깐만 읽어보세요!',
+    tip:null
+  },
+  {
+    icon:'👤',
+    title:'① 프로필을 먼저 설정해요',
+    desc:'나이·키·몸무게를 입력하면\n칼로리·단백질 목표가 자동으로 계산돼요.',
+    tip:'📌 프로필 정보는 칼로리 계산에만 사용돼요\n점수·랭킹에는 영향 없어요!'
+  },
+  {
+    icon:'🍽️',
+    title:'② 식단·운동을 기록해요',
+    desc:'오늘 먹은 음식과 운동을 기록하면\n단백질 목표 달성률과 칼로리를 확인할 수 있어요.',
+    tip:'💡 음식 이름만 입력해도 영양정보가 자동으로 채워져요'
+  },
+  {
+    icon:'⚖️',
+    title:'③ 인바디를 등록해야 점수가 계산돼요',
+    desc:'체지방량·근육량 변화를 기준으로\n점수와 랭킹이 자동으로 반영돼요.\n\n인바디는 총 3번 측정해요.',
+    tip:'📊 1차 시작 인바디(4/28 기준)를 꼭 등록해 두세요!\n등록하지 않으면 랭킹에 미등록으로 표시돼요'
+  },
+  {
+    icon:'🏆',
+    title:'④ 랭킹에서 다 같이 경쟁해요',
+    desc:'체지방 감량·근육량 변화에\n건강 가점까지 합산한 점수로 순위가 매겨져요.\n\n4개월 후 최종 순위를 향해 함께 달려봐요!',
+    tip:null
+  }
+];
+let tutStep=0;
+function showTutorialIfNeeded(){
+  if(localStorage.getItem('hlon_tutorial_seen'))return;
+  const ov=document.getElementById('tutOverlay');
+  if(!ov)return;
+  tutStep=0;
+  renderTutStep();
+  ov.classList.remove('hidden');
+}
+function renderTutStep(){
+  const s=TUT_STEPS[tutStep];
+  const total=TUT_STEPS.length;
+  document.getElementById('tutIcon').textContent=s.icon;
+  document.getElementById('tutTitle').textContent=s.title;
+  document.getElementById('tutDesc').innerHTML=s.desc.replace(/\n/g,'<br>');
+  const tipEl=document.getElementById('tutTip');
+  if(s.tip){tipEl.innerHTML=s.tip.replace(/\n/g,'<br>');tipEl.style.display='block';}
+  else{tipEl.style.display='none';}
+  // dots
+  document.querySelectorAll('.tut-dot').forEach((d,i)=>{
+    d.classList.toggle('on',i===tutStep);
+  });
+  // 버튼 텍스트
+  const nextBtn=document.getElementById('tutNextBtn');
+  const skipBtn=document.getElementById('tutSkipBtn');
+  if(tutStep===total-1){
+    nextBtn.textContent='시작하기 🚀';
+    skipBtn.textContent='다시 보지 않기';
+  } else {
+    nextBtn.textContent='다음 →';
+    skipBtn.textContent='건너뛰기';
+  }
+}
+function tutNext(){
+  const total=TUT_STEPS.length;
+  if(tutStep<total-1){
+    tutStep++;
+    renderTutStep();
+  } else {
+    tutClose(false);
+  }
+}
+function tutDot(i){
+  tutStep=i;
+  renderTutStep();
+}
+function tutClose(noShow){
+  if(noShow)localStorage.setItem('hlon_tutorial_seen','1');
+  const ov=document.getElementById('tutOverlay');
+  if(ov)ov.classList.add('hidden');
+}
 </script>
+
+<!-- ── 피드백 모달 ── -->
+<div class="feedback-overlay hidden" id="feedbackOverlay" onclick="if(event.target===this)closeFeedback()">
+  <div class="feedback-box">
+    <div class="feedback-title">💬 버그·건의사항 전달하기</div>
+    <div class="feedback-cats">
+      <button class="feedback-cat on" data-cat="버그">🐛 버그</button>
+      <button class="feedback-cat" data-cat="기능 추가">✨ 기능 추가</button>
+      <button class="feedback-cat" data-cat="수정 요청">🔧 수정 요청</button>
+      <button class="feedback-cat" data-cat="기타">💡 기타</button>
+    </div>
+    <textarea class="feedback-textarea" id="feedbackText" placeholder="어떤 문제인지, 어떤 기능이 필요한지 자유롭게 적어주세요!"></textarea>
+    <div class="feedback-hint">관리자(루나)에게 전달돼요 · 개인정보는 적지 마세요</div>
+    <button class="btn-main" onclick="submitFeedback()">전달하기</button>
+    <button class="btn-out" style="margin-top:7px" onclick="closeFeedback()">취소</button>
+  </div>
+</div>
+
+<!-- ── 튜토리얼 팝업 ── -->
+<div class="tut-overlay hidden" id="tutOverlay" onclick="if(event.target===this)tutClose(false)">
+  <div class="tut-box">
+    <div class="tut-icon" id="tutIcon">👋</div>
+    <div class="tut-title" id="tutTitle"></div>
+    <div class="tut-desc" id="tutDesc"></div>
+    <div class="tut-tip" id="tutTip" style="display:none"></div>
+    <div class="tut-dots" id="tutDots">
+      <div class="tut-dot on" onclick="tutDot(0)"></div>
+      <div class="tut-dot" onclick="tutDot(1)"></div>
+      <div class="tut-dot" onclick="tutDot(2)"></div>
+      <div class="tut-dot" onclick="tutDot(3)"></div>
+      <div class="tut-dot" onclick="tutDot(4)"></div>
+    </div>
+    <div class="tut-nav">
+      <button class="tut-btn-skip" id="tutSkipBtn" onclick="tutClose(tutStep===TUT_STEPS.length-1)">건너뛰기</button>
+      <button class="tut-btn-next" id="tutNextBtn" onclick="tutNext()">다음 →</button>
+    </div>
+  </div>
+</div>
 </html>
